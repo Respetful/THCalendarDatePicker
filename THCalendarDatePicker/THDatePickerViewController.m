@@ -277,6 +277,23 @@
             dayLabel.font = [UIFont systemFontOfSize:12];
             [self.weekdaysView addSubview:dayLabel];
             dayLabel.text = [df stringFromDate:date];
+            NSString* dateLabel = [df stringFromDate:date];
+            if ([dateLabel isEqualToString:@"Sun"]) {
+                dayLabel.text = @"Paz";
+            } else if ([dateLabel isEqualToString:@"Mon"]) {
+                dayLabel.text = @"Pzt";
+            } else if ([dateLabel isEqualToString:@"Tue"]) {
+                dayLabel.text = @"Sal";
+            } else if ([dateLabel isEqualToString:@"Wed"]) {
+                dayLabel.text = @"Çar";
+            } else if ([dateLabel isEqualToString:@"Thu"]) {
+                dayLabel.text = @"Per";
+            } else if ([dateLabel isEqualToString:@"Fri"]) {
+                dayLabel.text = @"Cum";
+            } else if ([dateLabel isEqualToString:@"Sat"]) {
+                dayLabel.text = @"Cmt";
+            }
+
             dayLabel.textColor = [UIColor grayColor];
             date = [_calendar dateByAddingComponents:offsetComponents toDate:date options:0];
             curX+=dayWidth;
