@@ -214,7 +214,7 @@
         monthName = @"Aralık";
     } else if ([monthName isEqualToString:@"January"]) {
         monthName = @"Ocak";
-    } else if ([monthName isEqualToString:@"Fabruary"]) {
+    } else if ([monthName isEqualToString:@"February"]) {
         monthName = @"Şubat";
     } else if ([monthName isEqualToString:@"March"]) {
         monthName = @"Mart";
