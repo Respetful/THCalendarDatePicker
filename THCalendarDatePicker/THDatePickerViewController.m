@@ -196,11 +196,45 @@
         [view removeFromSuperview];
     }
     [self redrawDays];
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    [formatter setDateFormat:@"MMMM yyyy"];
-    NSString *monthName = [formatter stringFromDate:self.firstOfCurrentMonth];
-    self.monthLabel.text = monthName;
+    NSDateFormatter *formatterYear = [[NSDateFormatter alloc] init];
+    [formatterYear setDateFormat:@"yyyy"];
+    
+    NSDateFormatter *formatterMonth = [[NSDateFormatter alloc] init];
+    [formatterMonth setDateFormat:@"MMMM"];
+    
+    
+    NSString *monthName = [formatterMonth stringFromDate:self.firstOfCurrentMonth];
+    NSString *yearName = [formatterYear stringFromDate:self.firstOfCurrentMonth];
+    
+    if ([monthName isEqualToString:@"October"]) {
+        monthName = @"Ekim";
+    } else if ([monthName isEqualToString:@"November"]) {
+        monthName = @"Kasım";
+    } else if ([monthName isEqualToString:@"December"]) {
+        monthName = @"Aralık";
+    } else if ([monthName isEqualToString:@"January"]) {
+        monthName = @"Ocak";
+    } else if ([monthName isEqualToString:@"Fabruary"]) {
+        monthName = @"Şubat";
+    } else if ([monthName isEqualToString:@"March"]) {
+        monthName = @"Mart";
+    } else if ([monthName isEqualToString:@"April"]) {
+        monthName = @"Nisan";
+    } else if ([monthName isEqualToString:@"May"]) {
+        monthName = @"Mayıs";
+    } else if ([monthName isEqualToString:@"June"]) {
+        monthName = @"Haziran";
+    } else if ([monthName isEqualToString:@"July"]) {
+        monthName = @"Temmuz";
+    } else if ([monthName isEqualToString:@"August"]) {
+        monthName = @"Ağustos";
+    } else if ([monthName isEqualToString:@"September"]) {
+        monthName = @"Eylül";
+    }
+    
+    self.monthLabel.text = [NSString stringWithFormat:@"%@ %@",monthName, yearName];
 }
+
 
 - (void)redrawDays {
     NSDateComponents *offsetComponents = [[NSDateComponents alloc] init];
@@ -489,7 +523,7 @@
     self.okBtn.frame = CGRectMake(curX, 5, buttonWidth, buttonHeight);
     if (_clearAsToday) {
         [self.clearBtn setImage:nil forState:UIControlStateNormal];
-        [self.clearBtn setTitle:NSLocalizedString(@"TODAY", @"Customize this for your language") forState:UIControlStateNormal];
+        [self.clearBtn setTitle:NSLocalizedString(@"Bugün", @"Dilinizi değiştirin") forState:UIControlStateNormal];
     } else {
         [self.clearBtn setImage:[UIImage imageNamed:@"dialog_clear"] forState:UIControlStateNormal];
         [self.clearBtn setTitle:nil forState:UIControlStateNormal];
