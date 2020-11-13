@@ -50,18 +50,22 @@
     if(light) {
         UIColor * color = [UIColor colorWithWhite:.84 alpha:1];
         [self.dateButton setTitleColor:color forState:UIControlStateNormal];
-        self.hasItemsIndicator.image = (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0") ? [UIImage imageNamed:@"calendar_littledot-disabled" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] : [UIImage imageNamed:@"calendar_littledot-disabled"]);
-    }
-    else {
+        self.hasItemsIndicator.image = ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8 ? [UIImage imageNamed:@"calendar_littledot-disabled" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] : [UIImage imageNamed:@"calendar_littledot-disabled"]);
+    } else {
         UIColor * color = [UIColor colorWithWhite:.3 alpha:1];
         [self.dateButton setTitleColor:color forState:UIControlStateNormal];
-        self.hasItemsIndicator.image = (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0") ? [UIImage imageNamed:@"calendar_littledot" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] : [UIImage imageNamed:@"calendar_littledot"]);
+        self.hasItemsIndicator.image = ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8 ? [UIImage imageNamed:@"calendar_littledot" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] : [UIImage imageNamed:@"calendar_littledot"]);
     }
     [self setCurrentColors];
 }
 
 - (IBAction)dateButtonTapped:(id)sender {
     [self.delegate dateDayTapped:self];
+}
+
+-(void)setIsDayInRange{
+    [self setBackgroundColor:[self.selectedBackgroundColor colorWithAlphaComponent:0.5]];
+    [self.dateButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
 }
 
 -(void)setSelected:(BOOL)selected {
@@ -99,8 +103,15 @@
 }
 
 - (BOOL)isToday {
-    NSDateComponents *otherDay = [[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian] components:NSCalendarUnitEra|NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:self.date];
-    NSDateComponents *today = [[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian] components:NSCalendarUnitEra|NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:[NSDate date]];
+    static NSCalendar* calendar;
+    
+    if (!calendar) {
+        calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
+    }
+    
+    
+    NSDateComponents *otherDay = [calendar components:NSCalendarUnitEra|NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:self.date];
+    NSDateComponents *today = [calendar components:NSCalendarUnitEra|NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:[NSDate date]];
     return ([today day] == [otherDay day] &&
             [today month] == [otherDay month] &&
             [today year] == [otherDay year] &&

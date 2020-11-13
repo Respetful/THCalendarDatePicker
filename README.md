@@ -22,18 +22,18 @@ The original controller was not aware of orientation changes and was missing som
 
 Install with [CocoaPods](http://cocoapods.org) by adding the following to your Podfile:
 
-####Objective-C
+#### Objective-C
 
 ``` ruby
-platform :ios, '6.1'
-pod 'THCalendarDatePicker', '~> 1.2.5'
+platform :ios, '8.0'
+pod 'THCalendarDatePicker', '~> 1.2.9'
 ```
-####Swift
+#### Swift
 
 ``` ruby
 platform :ios, '8.0'
 use_frameworks!
-pod 'THCalendarDatePicker', '~> 1.2.5'
+pod 'THCalendarDatePicker', '~> 1.2.9'
 ```
 
 **Note**: We follow http://semver.org for versioning the public API.
@@ -116,9 +116,12 @@ or how you could do it in Swift
 
 - Fixed issue [#28](https://github.com/hons82/THCalendarDatePicker/issues/28)
 - Fixed issue [#30](https://github.com/hons82/THCalendarDatePicker/issues/30)
+- Fixed issue [#69](https://github.com/hons82/THCalendarDatePicker/issues/69)
+- Fixed issue [#71](https://github.com/hons82/THCalendarDatePicker/issues/71)
 - Pull request [#40](https://github.com/hons82/THCalendarDatePicker/pull/40)
 - Pull request [#41](https://github.com/hons82/THCalendarDatePicker/pull/41)
 - Pull request [#53](https://github.com/hons82/THCalendarDatePicker/pull/53) 
+- Pull request [#70](https://github.com/hons82/THCalendarDatePicker/pull/70) 
 
 ### V1.1.X
 
@@ -146,17 +149,22 @@ or how you could do it in Swift
 
 - reduce size of control if "hasItemCallback" is not used/disabled
 
-#Contributions
+# Contributions
 
-...are really welcome. If you have an idea just fork the library change it and if its useful for others and not affecting the functionality of the library for other users I'll insert it
+...are really welcome. 
 
-###Contributors
+I'm bot using this component anymore in my projects, so the time I can dedicate to its maintainance is really limited. 
+
+If you have an idea just fork the library change it and if its useful for others and not affecting the functionality of the library for other users I'll insert it
+
+### Contributors
 
 - [Mikko Koppanen](https://github.com/mkoppanen)
 - [Kirill Pahnev](https://github.com/pahnev)
 - [jeremiescheer](https://github.com/jeremiescheer)
 - [powfulhong](https://github.com/powfulhong)
 - [sparkdreamstudio](https://github.com/sparkdreamstudio)
+- [Ignacio pascualin](https://github.com/pascualin)
 
 # License
 

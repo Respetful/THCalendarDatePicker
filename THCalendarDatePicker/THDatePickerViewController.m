@@ -24,12 +24,14 @@
     BOOL _allowSelectionOfSelectedDate;
     BOOL _clearAsToday;
     BOOL _autoCloseOnSelectDate;
-    BOOL _isOkButtonvisibility;
     NSUInteger _daysInHistory;
     NSUInteger _daysInFuture;
     BOOL _disableYearSwitch;
     BOOL (^_dateHasItemsCallback)(NSDate *);
     float _slideAnimationDuration;
+    NSMutableArray * _selectedDates;
+    NSMutableArray * _selectedDateViews;
+    THDatePickerSelectionType _selectionType;
 }
 @property (nonatomic, strong) NSDate * firstOfCurrentMonth;
 @property (nonatomic, strong) THDateDay * currentDay;
@@ -54,8 +56,6 @@
 - (IBAction)clearPressed:(id)sender;
 - (IBAction)closePressed:(id)sender;
 
-- (void)redraw;
-
 @end
 
 @implementation THDatePickerViewController
@@ -68,12 +68,14 @@
 @synthesize rounded = _rounded;
 @synthesize historyFutureBasedOnInternal = _historyFutureBasedOnInternal;
 @synthesize slideAnimationDuration = _slideAnimationDuration;
+@synthesize selectedDates = _selectedDates;
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self) {
         // Custom initialization
         _calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
+        [_calendar setLocale:[NSLocale currentLocale]];
         _allowClearDate = NO;
         _allowSelectionOfSelectedDate = NO;
         _clearAsToday = NO;
@@ -83,12 +85,22 @@
         _autoCloseCancelDelay = 1.0;
         _dateTimeZone = [NSTimeZone defaultTimeZone];
         _slideAnimationDuration = .5;
+        _selectedDates = [[NSMutableArray alloc] init];
+        _selectedDateViews = [[NSMutableArray alloc] init];
+        _selectionType = THDatePickerSelectionTypeSingle;
     }
     return self;
 }
 
 +(THDatePickerViewController *)datePicker {
     return [[THDatePickerViewController alloc] initWithNibName:@"THDatePickerViewController" bundle:[NSBundle bundleForClass:self.class]];
+}
+
+-(void)setSelectionType:(THDatePickerSelectionType)type{
+    _selectionType = type;
+    if (type == THDatePickerSelectionTypeSingle){
+        [self setAutoCloseOnSelectDate:true];
+    }
 }
 
 - (void)setAllowClearDate:(BOOL)allow {
@@ -110,6 +122,10 @@
     if (!_allowClearDate)
         [self setAllowClearDate:!autoClose];
     _autoCloseOnSelectDate = autoClose;
+    if (_autoCloseOnSelectDate && _selectionType != THDatePickerSelectionTypeSingle){
+        _selectionType = THDatePickerSelectionTypeSingle;
+    }
+    
 }
 
 - (void)setDisableHistorySelection:(BOOL)disableHistorySelection {
@@ -162,8 +178,7 @@
         [self hideClearButton];
     [self addSwipeGestures];
     self.okBtn.enabled = [self shouldOkBeEnabled];
-    [self.okBtn setImage:(SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0") ? [UIImage imageNamed:(_autoCloseOnSelectDate ? @"dialog_clear" : @"dialog_ok") inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] : [UIImage imageNamed:(_autoCloseOnSelectDate ? @"dialog_clear" : @"dialog_ok")]) forState:UIControlStateNormal];
-    [self.okBtn setHidden:_isOkButtonvisibility];
+    [self.okBtn setImage:([[[UIDevice currentDevice] systemVersion] floatValue] >= 8 ? [UIImage imageNamed:(_autoCloseOnSelectDate ? @"dialog_clear" : @"dialog_ok") inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] : [UIImage imageNamed:(_autoCloseOnSelectDate ? @"dialog_clear" : @"dialog_ok")]) forState:UIControlStateNormal];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -255,19 +270,44 @@
     for(UIView * view in self.calendarDaysView.subviews){ // clean view
         [view removeFromSuperview];
     }
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    [formatter setCalendar:[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian]];
-    [formatter setDateFormat:(_disableYearSwitch ? @"MMMM yyyy" : @"yyyy\nMMMM")];
-    formatter.locale=[NSLocale currentLocale];
-    NSString *monthName = [formatter stringFromDate:self.firstOfCurrentMonth];
-    self.monthLabel.text = monthName;
+    [self redrawDays];
+    NSDateFormatter *formatterYear = [[NSDateFormatter alloc] init];
+    [formatterYear setDateFormat:@"yyyy"];
     
-    if (self.dateTitle != nil && _allowClearDate == NO) {
-        self.titleLabel.text = self.dateTitle;
-        self.titleLabel.hidden = NO;
+    NSDateFormatter *formatterMonth = [[NSDateFormatter alloc] init];
+    [formatterMonth setDateFormat:@"MMMM"];
+    
+    
+    NSString *monthName = [formatterMonth stringFromDate:self.firstOfCurrentMonth];
+    NSString *yearName = [formatterYear stringFromDate:self.firstOfCurrentMonth];
+    
+    if ([monthName isEqualToString:@"October"]) {
+        monthName = @"Ekim";
+    } else if ([monthName isEqualToString:@"November"]) {
+        monthName = @"Kasım";
+    } else if ([monthName isEqualToString:@"December"]) {
+        monthName = @"Aralık";
+    } else if ([monthName isEqualToString:@"January"]) {
+        monthName = @"Ocak";
+    } else if ([monthName isEqualToString:@"February"]) {
+        monthName = @"Şubat";
+    } else if ([monthName isEqualToString:@"March"]) {
+        monthName = @"Mart";
+    } else if ([monthName isEqualToString:@"April"]) {
+        monthName = @"Nisan";
+    } else if ([monthName isEqualToString:@"May"]) {
+        monthName = @"Mayıs";
+    } else if ([monthName isEqualToString:@"June"]) {
+        monthName = @"Haziran";
+    } else if ([monthName isEqualToString:@"July"]) {
+        monthName = @"Temmuz";
+    } else if ([monthName isEqualToString:@"August"]) {
+        monthName = @"Ağustos";
+    } else if ([monthName isEqualToString:@"September"]) {
+        monthName = @"Eylül";
     }
     
-    [self redrawDays];
+    self.monthLabel.text = [NSString stringWithFormat:@"%@ %@",monthName, yearName];
 }
 
 - (void)redrawDays {
@@ -307,6 +347,34 @@
         if (self.selectedBackgroundColor)
             [day setSelectedBackgroundColor:self.selectedBackgroundColor];
         
+        switch (_selectionType) {
+            case THDatePickerSelectionTypeSingle:
+                if (_internalDate && ![[self dateWithOutTime:date] timeIntervalSinceDate:_internalDate]) {
+                    self.currentDay = day;
+                    [day setSelected:YES];
+                }
+                break;
+            case THDatePickerSelectionTypeMulti:
+                if ([_selectedDates containsObject:date]) {
+                    if ([_selectedDates lastObject] == date) {
+                        _internalDate = date;
+                    }
+                    [day setSelected:YES];
+                } else {
+                    [day setSelected:NO];
+                }
+                break;
+            case THDatePickerSelectionTypeRange:
+                if ([_selectedDates containsObject:date]) {
+                    [day setSelected:YES];
+                } else if ([date timeIntervalSinceDate:[_selectedDates firstObject]] > 0 && [date timeIntervalSinceDate:[_selectedDates lastObject]] < 0){
+                    [day setIsDayInRange];
+                }else {
+                    [day setSelected:NO];
+                }
+                break;
+        }
+        
         [day setLightText:![self dateInCurrentMonth:date]];
         [day setEnabled:![self dateInFutureAndShouldBeDisabled:date]];
         [day indicateDayHasItems:(_dateHasItemsCallback && _dateHasItemsCallback(date))];
@@ -315,10 +383,6 @@
         [day.dateButton setTitle:[NSString stringWithFormat:@"%ld",(long)[comps day]]
                         forState:UIControlStateNormal];
         [self.calendarDaysView addSubview:day];
-        if (_internalDate && ![[date dateWithOutTime] timeIntervalSinceDate:_internalDate]) {
-            self.currentDay = day;
-            [day setSelected:YES];
-        }
         // @end
         date = [_calendar dateByAddingComponents:offsetComponents toDate:date options:0];
         curX += cellWidth;
@@ -329,16 +393,24 @@
     if(!self.weekdaysView.subviews.count) {
         CGSize fullSize = self.weekdaysView.frame.size;
         int curX = (fullSize.width - 7*dayWidth)/2;
-        NSDateComponents * comps = [_calendar components:NSCalendarUnitDay fromDate:[NSDate date]];
-        NSCalendar *c = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
-        [comps setDay:[c firstWeekday]-1];
+        //NSCalendar *c = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+        NSCalendar* c =[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+        [c setLocale:[NSLocale currentLocale]];
+
         NSDateFormatter *df = [[NSDateFormatter alloc] init];
         NSDateComponents *offsetComponents = [[NSDateComponents alloc] init];
         [offsetComponents setDay:1];
         [df setDateFormat:@"EE"];
         df.locale = [NSLocale currentLocale];
-        [df setCalendar:[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian]];
-        NSDate * date = [_calendar dateFromComponents:comps];
+        NSCalendar* cal =[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+        [cal setLocale:[NSLocale currentLocale]];
+
+        [df setCalendar:cal];
+        
+        NSDateComponents *firstDayOffsetComponents = [[NSDateComponents alloc] init];
+        [firstDayOffsetComponents setDay:-_bufferDaysBeginning];
+        NSDate * date = [_calendar dateByAddingComponents:firstDayOffsetComponents toDate:self.firstOfCurrentMonth options:0];
+        
         for(int i = 0; i < 7; i++){
             UILabel * dayLabel = [[UILabel alloc] initWithFrame:CGRectMake(curX, 0, dayWidth, fullSize.height)];
             dayLabel.textAlignment = NSTextAlignmentCenter;
@@ -354,20 +426,38 @@
 
 #pragma mark - Date Set, etc.
 
+- (NSArray *)selectedDates {
+    return [[NSArray alloc] initWithArray:_selectedDates];
+}
+
+- (void)setSelectedDates:(NSArray *)selectedDates {
+    
+    _selectedDates = [[NSMutableArray alloc] init];
+    for (NSDate* selectedDate in selectedDates) {
+        [_selectedDates addObject:[self dateWithOutTime:selectedDate]];
+    }
+    if ([_selectedDates count] > 0) {
+        _date = (NSDate*)[_selectedDates objectAtIndex:0];
+        _dateNoTime = !_date ? nil : [self dateWithOutTime:_date];
+        self.internalDate = [_dateNoTime dateByAddingTimeInterval:0];
+    }
+    [self redrawDays];
+}
+
 - (void)setDate:(NSDate *)date {
-    _date = date;
-    _dateNoTime = !date ? nil : [date dateWithOutTime];
-    self.internalDate = [_dateNoTime dateByAddingTimeInterval:0];
+    [self setSelectedDates:@[date]];
 }
 
 - (NSDate *)date {
-    if(!self.internalDate) return nil;
-    else if(!_date) return self.internalDate;
+    if(!self.internalDate)
+        return nil;
+    else if(!_date)
+        return self.internalDate;
     else {
         int ymd = NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay;
         NSDateComponents* internalComps = [_calendar components:ymd fromDate:self.internalDate];
         int time = NSCalendarUnitHour|NSCalendarUnitMinute|NSCalendarUnitSecond|NSCalendarUnitTimeZone;
-        NSDateComponents* origComps = [_calendar components:time fromDate:_date];
+        NSDateComponents* origComps = [_calendar components:time fromDate:((_selectionType != THDatePickerSelectionTypeSingle) && [_selectedDates count] > 0 ? [_selectedDates lastObject] : _date)];
         [origComps setDay:[internalComps day]];
         [origComps setMonth:[internalComps month]];
         [origComps setYear:[internalComps year]];
@@ -376,16 +466,27 @@
 }
 
 - (BOOL)shouldOkBeEnabled {
-    if (_autoCloseOnSelectDate)
-        return YES;
-    return (self.internalDate && _dateNoTime && (_allowSelectionOfSelectedDate || [self.internalDate timeIntervalSinceDate:_dateNoTime]))
-    || (self.internalDate && !_dateNoTime)
-    || (!self.internalDate && _dateNoTime);
+    switch (_selectionType) {
+        case THDatePickerSelectionTypeSingle:
+            if (_autoCloseOnSelectDate)
+                return YES;
+            NSLog(@"interval %f",[self.internalDate timeIntervalSinceDate:_dateNoTime]);
+            return (self.internalDate && _dateNoTime && (_allowSelectionOfSelectedDate || [self.internalDate timeIntervalSinceDate:_dateNoTime]))
+            || (self.internalDate && !_dateNoTime)
+            || (!self.internalDate && _dateNoTime);
+            break;
+        case THDatePickerSelectionTypeMulti:
+            return ([_selectedDates count] > 0);
+            break;
+        case THDatePickerSelectionTypeRange:
+            return ([_selectedDates count] > 0);
+            break;
+    }
 }
 
 - (void)setInternalDate:(NSDate *)internalDate{
     _internalDate = internalDate;
-    self.clearBtn.enabled = !!internalDate;
+    self.clearBtn.enabled = internalDate;
     self.okBtn.enabled = [self shouldOkBeEnabled];
     if(internalDate){
         [self setDisplayedMonthFromDate:internalDate];
@@ -396,22 +497,36 @@
 }
 
 - (void)setDisplayedMonth:(int)month year:(int)year{
+    
     NSDateFormatter *df = [[NSDateFormatter alloc] init];
     [df setDateFormat:@"yyyy-MM"];
     [df setTimeZone:self.dateTimeZone];
-    [df setCalendar:[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian]];
+    NSCalendar* cal =[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+    [cal setLocale:[NSLocale currentLocale]];
+
+    [df setCalendar:cal];
     self.firstOfCurrentMonth = [df dateFromString: [NSString stringWithFormat:@"%d-%@%d", year, (month<10?@"0":@""), month]];
     [self storeDateInformation];
+    
+    if ([self.delegate respondsToSelector:@selector(datePicker:changedMonth:year:)]) {
+        [self.delegate datePicker:self changedMonth:month year:year];
+    }
 }
 
 - (void)setDisplayedMonthFromDate:(NSDate *)date{
-    NSDateComponents* comps = [[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian] components:NSCalendarUnitYear|NSCalendarUnitMonth fromDate:date];
+    NSCalendar* cal =[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+    [cal setLocale:[NSLocale currentLocale]];
+
+    NSDateComponents* comps = [cal components:NSCalendarUnitYear|NSCalendarUnitMonth fromDate:date];
     [self setDisplayedMonth:(int)[comps month] year:(int)[comps year]];
 }
 
 - (void)storeDateInformation{
     NSDateComponents *comps = [_calendar components:NSCalendarUnitWeekday | NSCalendarUnitDay fromDate:self.firstOfCurrentMonth];
-    NSCalendar *c = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+    NSCalendar* c =[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+    [c setLocale:[NSLocale currentLocale]];
+
+    //NSCalendar *c = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
 #ifdef DEBUG
     //[c setFirstWeekday:FIRST_WEEKDAY];
 #endif
@@ -452,23 +567,70 @@
 #pragma mark - User Events
 
 - (void)dateDayTapped:(THDateDay *)dateDay {
-    if (!_internalDate || [_internalDate timeIntervalSinceDate:dateDay.date] || _allowSelectionOfSelectedDate) { // new date selected
-        [self.currentDay setSelected:NO];
-        [self.currentDay setLightText:![self dateInCurrentMonth:self.currentDay.date]];
-        [dateDay setSelected:YES];
-        BOOL dateInDifferentMonth = ![self dateInCurrentMonth:dateDay.date];
-        NSDate *firstOfCurrentMonth = self.firstOfCurrentMonth;
-        [self setInternalDate:dateDay.date];
-        [self setCurrentDay:dateDay];
-        if (dateInDifferentMonth) {
-            [self slideTransitionViewInDirection:[dateDay.date timeIntervalSinceDate:firstOfCurrentMonth]<0 ? UISwipeGestureRecognizerDirectionRight : UISwipeGestureRecognizerDirectionLeft];
-        }
-        if ([self.delegate respondsToSelector:@selector(datePicker:selectedDate:)]) {
-            [self.delegate datePicker:self selectedDate:dateDay.date];
-        }
-        if (_autoCloseOnSelectDate) {
-            [self.delegate datePickerDonePressed:self];
-        }
+    BOOL dateInDifferentMonth = ![self dateInCurrentMonth:dateDay.date];
+    NSDate *firstOfCurrentMonth = self.firstOfCurrentMonth;
+    switch (_selectionType) {
+        case THDatePickerSelectionTypeSingle:
+            if (!_internalDate || [_internalDate timeIntervalSinceDate:dateDay.date] || _allowSelectionOfSelectedDate) { // new date selected
+                [self.currentDay setSelected:NO];
+                [self.currentDay setLightText:![self dateInCurrentMonth:self.currentDay.date]];
+                [dateDay setSelected:YES];
+                [self setInternalDate:dateDay.date];
+                [self setCurrentDay:dateDay];
+                [_selectedDates removeAllObjects];
+                [_selectedDates addObject:[self dateWithOutTime:dateDay.date]];
+                if ([self.delegate respondsToSelector:@selector(datePicker:selectedDate:)]) {
+                    [self.delegate datePicker:self selectedDate:dateDay.date];
+                }
+            }
+            break;
+        case THDatePickerSelectionTypeMulti:
+            [self setInternalDate:dateDay.date];
+            if (![_selectedDates containsObject:[self dateWithOutTime:dateDay.date]]){
+                [_selectedDates addObject:[self dateWithOutTime:dateDay.date]];
+                [dateDay setSelected:YES];
+                if ([self.delegate respondsToSelector:@selector(datePicker:selectedDate:)]) {
+                    [self.delegate datePicker:self selectedDate:dateDay.date];
+                }
+            } else {
+                if ([self.delegate respondsToSelector:@selector(datePicker:deselectedDate:)]) {
+                    [self.delegate datePicker:self deselectedDate:dateDay.date];
+                }
+                [dateDay setLightText:dateInDifferentMonth];
+                [dateDay setSelected:NO];
+                [_selectedDates removeObject:dateDay.date];
+            }
+            self.okBtn.enabled = [self shouldOkBeEnabled];
+            break;
+        case THDatePickerSelectionTypeRange:
+            [self setInternalDate:dateDay.date];
+            if ([_selectedDates count] > 1){
+                for (NSUInteger i = 0; i < [_selectedDates count]; i++){
+                    NSDate *date = [_selectedDates objectAtIndex:i];
+                    if ([self.delegate respondsToSelector:@selector(datePicker:deselectedDate:)]) {
+                        [self.delegate datePicker:self deselectedDate:date];
+                    }
+                }
+                [_selectedDates removeAllObjects];
+            }
+            [_selectedDates addObject:[self dateWithOutTime:dateDay.date]];
+            if ([self.delegate respondsToSelector:@selector(datePicker:selectedDate:)]) {
+                [self.delegate datePicker:self selectedDate:dateDay.date];
+            }
+            [dateDay setSelected:YES];
+            if ([_selectedDates count] > 1){
+                [_selectedDates sortUsingSelector:@selector(compare:)];
+            }
+            [self redrawDays];
+            self.okBtn.enabled = [self shouldOkBeEnabled];
+            break;
+    }
+    
+    if (_autoCloseOnSelectDate) {
+        [self.delegate datePickerDonePressed:self];
+    }
+    if (dateInDifferentMonth) {
+        [self slideTransitionViewInDirection:[dateDay.date timeIntervalSinceDate:firstOfCurrentMonth]<0 ? UISwipeGestureRecognizerDirectionRight : UISwipeGestureRecognizerDirectionLeft];
     }
 }
 
@@ -563,10 +725,6 @@
     [self.delegate datePickerCancelPressed:self];
 }
 
-- (void)setOkButtonVisibility:(BOOL)isVisible{
-    _isOkButtonvisibility = isVisible;
-}
-
 #pragma mark - Hide/Show Clear Button
 
 - (void) showClearButton {
@@ -583,7 +741,7 @@
         [self.clearBtn setImage:nil forState:UIControlStateNormal];
         [self.clearBtn setTitle:NSLocalizedString(@"TODAY", @"Customize this for your language") forState:UIControlStateNormal];
     } else {
-        [self.clearBtn setImage:(SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0") ? [UIImage imageNamed:@"dialog_clear" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] : [UIImage imageNamed:@"dialog_clear"]) forState:UIControlStateNormal];
+        [self.clearBtn setImage:([[[UIDevice currentDevice] systemVersion] floatValue] >= 8 ? [UIImage imageNamed:@"dialog_clear" inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] : [UIImage imageNamed:@"dialog_clear"]) forState:UIControlStateNormal];
     }
 }
 
@@ -604,7 +762,10 @@
     NSDate *currentDate = [(self.isHistoryFutureBasedOnInternal ?
                             self.internalDate : [NSDate date]) dateWithOutTime];
     NSInteger dayDifference = [currentDate daysFromDate:dateToCompare];
-    NSCalendar *calendar = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+    NSCalendar* calendar =[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
+    [calendar setLocale:[NSLocale currentLocale]];
+
+    //NSCalendar *calendar = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
     NSInteger comps = (NSCalendarUnitDay | NSCalendarUnitMonth | NSCalendarUnitYear);
     currentDate = [calendar dateFromComponents:[calendar components:comps fromDate:currentDate]];
     dateToCompare = [calendar dateFromComponents:[calendar components:comps fromDate:dateToCompare]];
@@ -617,6 +778,14 @@
     NSDateComponents* comp1 = [_calendar components:unitFlags fromDate:self.firstOfCurrentMonth];
     NSDateComponents* comp2 = [_calendar components:unitFlags fromDate:date];
     return [comp1 year]  == [comp2 year] && [comp1 month] == [comp2 month];
+}
+
+- (NSDate *)dateWithOutTime:(NSDate *)datDate {
+    if(!datDate) {
+        datDate = [NSDate date];
+    }
+    NSDateComponents* comps = [[NSCalendar currentCalendar] components:NSCalendarUnitYear|NSCalendarUnitMonth|NSCalendarUnitDay fromDate:datDate];
+    return [[NSCalendar currentCalendar] dateFromComponents:comps];
 }
 
 #pragma mark - Cleanup

@@ -13,43 +13,57 @@
 
 #import "THDateDay.h"
 
+typedef NS_ENUM(NSInteger, THDatePickerSelectionType) {
+    THDatePickerSelectionTypeSingle,
+    THDatePickerSelectionTypeMulti,
+    THDatePickerSelectionTypeRange
+};
+
 @class THDatePickerViewController;
 
 @protocol THDatePickerDelegate <NSObject>
 
--(void)datePickerDonePressed:(THDatePickerViewController *)datePicker;
--(void)datePickerCancelPressed:(THDatePickerViewController *)datePicker;
+-(void)datePickerDonePressed:(THDatePickerViewController * _Nonnull)datePicker;
+-(void)datePickerCancelPressed:(THDatePickerViewController * _Nonnull)datePicker;
 
 @optional
 
--(void)datePicker:(THDatePickerViewController *)datePicker selectedDate:(NSDate *)selectedDate;
--(void)datePickerDidHide:(THDatePickerViewController *)datePicker;
+-(void)datePicker:(THDatePickerViewController * _Nonnull)datePicker selectedDate:(NSDate * _Nonnull)selectedDate;
+-(void)datePicker:(THDatePickerViewController * _Nonnull)datePicker deselectedDate:(NSDate * _Nonnull)deselectedDate;
+-(void)datePickerDidHide:(THDatePickerViewController * _Nonnull)datePicker;
+-(void)datePicker:(THDatePickerViewController * _Nonnull)datePicker changedMonth:(NSInteger)month year:(NSInteger)year;
 
 @end
 
 @interface THDatePickerViewController : UIViewController <THDateDayDelegate>
 
-+(THDatePickerViewController *)datePicker;
++(THDatePickerViewController * _Nonnull)datePicker;
 
-@property (strong, nonatomic) NSDate * date;
-@property (weak, nonatomic) id<THDatePickerDelegate> delegate;
-@property (strong, nonatomic) UIColor *selectedBackgroundColor;
-@property (strong, nonatomic) UIColor *currentDateColor;
-@property (strong, nonatomic) UIColor *currentDateColorSelected;
+@property (strong, nonatomic) NSDate * _Nullable date;
+@property (weak, nonatomic) id<THDatePickerDelegate> _Nullable delegate;
+@property (strong, nonatomic) UIColor * _Nonnull selectedBackgroundColor;
+@property (strong, nonatomic) UIColor * _Nonnull currentDateColor;
+@property (strong, nonatomic) UIColor * _Nonnull currentDateColorSelected;
 @property (nonatomic) float autoCloseCancelDelay;
-@property (strong, nonatomic) NSTimeZone *dateTimeZone;
+@property (strong, nonatomic) NSTimeZone * _Nonnull dateTimeZone;
 @property (nonatomic, getter=isRounded) BOOL rounded;
 @property (nonatomic, getter=isHistoryFutureBasedOnInternal) BOOL historyFutureBasedOnInternal;
-@property (weak, nonatomic) IBOutlet UIView *toolbarBackgroundView;
+@property (weak, nonatomic) IBOutlet UIView * _Nullable toolbarBackgroundView;
 @property (nonatomic) float slideAnimationDuration;
-@property (strong, nonatomic) NSString* dateTitle;
+@property (strong, nonatomic) NSString * _Nullable dateTitle;
+@property (strong, nonatomic) NSArray * _Nullable selectedDates;
 
-- (void)setDateHasItemsCallback:(BOOL (^)(NSDate * date))callback;
+- (void)setDateHasItemsCallback:(BOOL (^_Nullable)(NSDate * _Nonnull date))callback;
 
 /*! Enable Clear Date Button
  * \param allow should show "clear date" button
  */
 - (void)setAllowClearDate:(BOOL)allow;
+
+/*! Enable Multi Day Selection
+ * \param type selection of multiple days
+ */
+- (void)setSelectionType:(THDatePickerSelectionType)type;
 
 /*! Enable Ok Button when selected Date has already been selected
  * \param allow should show ok button
@@ -87,10 +101,10 @@
 - (void)setDaysInFutureSelection:(NSUInteger)daysInFuture;
 
 /*! Set the timeZone by name to be used. Valid timezones can be retrieved using [NSTimeZone knownTimeZoneNames]
- * \param the name of the timezone to be used
+ * \param name the name of the timezone to be used
  * \return successful?
  */
-- (BOOL)setDateTimeZoneWithName:(NSString *)name;
+- (BOOL)setDateTimeZoneWithName:(NSString * _Nonnull)name;
 
 /*! Should it be possible to fast switch the year
  * \param disableYearSwitch should it be possible?
@@ -101,16 +115,14 @@
  * \param fromDate      range from
  * \param toDate        range to
  */
-- (void)setDateRangeFrom:(NSDate *)fromDate toDate:(NSDate *)toDate;
+- (void)setDateRangeFrom:(NSDate * _Nonnull)fromDate toDate:(NSDate * _Nonnull)toDate;
 
 /*! Set calendar title
  * \param dateTitle     calendar title
  */
-- (void)setDateTitle:(NSString*)dateTitle;
+- (void)setDateTitle:(NSString * _Nonnull)dateTitle;
 
-/*! Set Ok Button Visibility
- * \param isVisible
+/*! Redraw the calendar to update the dot indicators
  */
-- (void)setOkButtonVisibility:(BOOL)isVisible;
-
+- (void)redraw;
 @end
