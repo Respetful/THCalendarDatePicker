@@ -90,6 +90,11 @@ typedef NS_ENUM(NSInteger, THDatePickerSelectionType) {
  */
 - (void)setDisableFutureSelection:(BOOL)disableFutureSelection;
 
+/*! Set Ok Button Visibility
+ * \param isVisible
+ */
+- (void)setOkButtonVisibility:(BOOL)isVisible;
+
 /*! Should it be possible to select dates in history up to a number of days (including today) or 0 if any date
  * \param daysInHistory how many days?
  */

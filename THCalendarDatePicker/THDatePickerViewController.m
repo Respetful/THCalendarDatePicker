@@ -24,9 +24,9 @@
     BOOL _allowSelectionOfSelectedDate;
     BOOL _clearAsToday;
     BOOL _autoCloseOnSelectDate;
-    NSUInteger _daysInHistory;
-    NSUInteger _daysInFuture;
-    BOOL _disableYearSwitch;
+    BOOL _disableHistorySelection;
+    BOOL _disableFutureSelection;
+    BOOL _isOkButtonvisibility;
     BOOL (^_dateHasItemsCallback)(NSDate *);
     float _slideAnimationDuration;
     NSMutableArray * _selectedDates;
@@ -178,11 +178,8 @@
         [self hideClearButton];
     [self addSwipeGestures];
     self.okBtn.enabled = [self shouldOkBeEnabled];
-    [self.okBtn setImage:([[[UIDevice currentDevice] systemVersion] floatValue] >= 8 ? [UIImage imageNamed:(_autoCloseOnSelectDate ? @"dialog_clear" : @"dialog_ok") inBundle:[NSBundle bundleForClass:self.class] compatibleWithTraitCollection:nil] : [UIImage imageNamed:(_autoCloseOnSelectDate ? @"dialog_clear" : @"dialog_ok")]) forState:UIControlStateNormal];
-}
-
-- (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
+    [self.okBtn setImage:[UIImage imageNamed:(_autoCloseOnSelectDate ? @"dialog_clear" : @"dialog_ok")] forState:UIControlStateNormal];
+    [self.okBtn setHidden:!_isOkButtonvisibility];
     [self redraw];
 }
 
@@ -393,10 +390,14 @@
     if(!self.weekdaysView.subviews.count) {
         CGSize fullSize = self.weekdaysView.frame.size;
         int curX = (fullSize.width - 7*dayWidth)/2;
-        //NSCalendar *c = [NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
-        NSCalendar* c =[NSCalendar calendarWithIdentifier:NSCalendarIdentifierGregorian];
-        [c setLocale:[NSLocale currentLocale]];
-
+        NSDateComponents * comps = [_calendar components:NSCalendarUnitDay fromDate:[NSDate date]];
+        NSCalendar *c = [NSCalendar currentCalendar];
+        [comps setDay:[c firstWeekday]-1];
+        
+        if (@available(iOS 12.0, *)) {
+            [comps setDay:[c firstWeekday]+1];
+        }
+        
         NSDateFormatter *df = [[NSDateFormatter alloc] init];
         NSDateComponents *offsetComponents = [[NSDateComponents alloc] init];
         [offsetComponents setDay:1];
@@ -723,6 +724,10 @@
 
 - (IBAction)closePressed:(id)sender {
     [self.delegate datePickerCancelPressed:self];
+}
+
+- (void)setOkButtonVisibility:(BOOL)isVisible{
+    _isOkButtonvisibility = isVisible;
 }
 
 #pragma mark - Hide/Show Clear Button
