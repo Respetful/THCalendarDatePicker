@@ -27,6 +27,9 @@
     BOOL _disableHistorySelection;
     BOOL _disableFutureSelection;
     BOOL _isOkButtonvisibility;
+    NSUInteger _daysInHistory;
+    NSUInteger _daysInFuture;
+    BOOL _disableYearSwitch;
     BOOL (^_dateHasItemsCallback)(NSDate *);
     float _slideAnimationDuration;
     NSMutableArray * _selectedDates;
